@@ -19,6 +19,8 @@ jobs:
       - run: java -version
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
+      - name: Apply patches with Gradle
+        run: ./gradlew applyPatches
       - name: Build Paperclip with Gradle
         run: ./gradlew paperclipJar
       - name: Upload build artifacts
