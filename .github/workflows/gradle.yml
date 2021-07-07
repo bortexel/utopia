@@ -17,6 +17,8 @@ jobs:
         with:
           java-version: 16
       - run: java -version
+      - name: Configure git credentials
+        uses: OleksiyRudenko/gha-git-credentials@v2
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Apply patches with Gradle
