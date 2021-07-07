@@ -18,9 +18,7 @@ jobs:
           java-version: 16
       - run: java -version
       - name: Configure git credentials
-        uses: OleksiyRudenko/gha-git-credentials@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        run: git config --global user.email "me@ruscalworld.ru" && git config --global user.name "RuscalWorld"
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Apply patches with Gradle
