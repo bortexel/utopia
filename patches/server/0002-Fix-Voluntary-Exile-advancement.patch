@@ -7,10 +7,10 @@ Just backport of patch from Purpur that does the same
 Original patch: https://github.com/pl3xgaming/Purpur/commit/e92d259e9053570cb49647ce5675d1a82ad6fc41
 
 diff --git a/src/main/java/net/minecraft/world/entity/LivingEntity.java b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-index ed745776316c5346ee1b44c8f022c40359b7e642..043a426360a72490c5d9ec93aa444e94c4d696f7 100644
+index 496f74d908e2d448811dd2b951916153a54a5995..729809155dfc3799cbb448c17042e84d52b32175 100644
 --- a/src/main/java/net/minecraft/world/entity/LivingEntity.java
 +++ b/src/main/java/net/minecraft/world/entity/LivingEntity.java
-@@ -1628,7 +1628,9 @@ public abstract class LivingEntity extends Entity {
+@@ -1627,7 +1627,9 @@ public abstract class LivingEntity extends Entity {
                  org.bukkit.event.entity.EntityDeathEvent deathEvent = this.dropAllDeathLoot(source);
                  if (deathEvent == null || !deathEvent.isCancelled()) {
                      if (this.deathScore >= 0 && entityliving != null) {
@@ -20,14 +20,13 @@ index ed745776316c5346ee1b44c8f022c40359b7e642..043a426360a72490c5d9ec93aa444e94
                      }
  
                      if (this.isSleeping()) {
-@@ -4197,5 +4199,7 @@ public abstract class LivingEntity extends Entity {
+@@ -4200,4 +4202,6 @@ public abstract class LivingEntity extends Entity {
          this.absMoveTo(d0, d1, d2, f, f1);
          this.setDeltaMovement((double) ((float) packet.getXd() / 8000.0F), (double) ((float) packet.getYd() / 8000.0F), (double) ((float) packet.getZd() / 8000.0F));
      }
 +
 +    public void fixHead() { } // Utopia
  }
- 
 diff --git a/src/main/java/net/minecraft/world/entity/raid/Raider.java b/src/main/java/net/minecraft/world/entity/raid/Raider.java
 index 54b5cfa35e5fe9138d39a73f2085f594f1987cda..a7034a3352bf03b8827552dd07b08a9c8bbd1334 100644
 --- a/src/main/java/net/minecraft/world/entity/raid/Raider.java
