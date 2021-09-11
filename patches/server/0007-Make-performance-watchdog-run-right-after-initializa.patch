@@ -5,10 +5,10 @@ Subject: [PATCH] Make performance watchdog run right after initialization
 
 
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index 9a6d553d1e3fe9b55c5187a5fa851c951403733a..a74e63ea6124e4fc3b4b4bf760df0bcf7b38df7a 100644
+index 2d2c6dd49bbeaf25ae0e934a728bfeb9346c6760..1403885a85e2636617a59adda3e25e9b514f662a 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-@@ -358,7 +358,7 @@ public final class CraftServer implements Server {
+@@ -375,7 +375,7 @@ public final class CraftServer implements Server {
          // Utopia start
          PropertyPool.loadDefault(console.settings.getProperties(), this);
          Timer timer = new Timer();
