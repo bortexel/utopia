@@ -5,6 +5,6 @@ pluginManagement {
     }
 }
 
-rootProject.name = "Utopia"
+rootProject.name = "utopia"
 
-include("Utopia-API", "Utopia-Server")
+include("utopia-api", "utopia-server")
