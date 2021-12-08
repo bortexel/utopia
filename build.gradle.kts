@@ -2,7 +2,7 @@ import io.papermc.paperweight.util.constants.PAPERCLIP_CONFIG
 
 plugins {
     java
-    id("com.github.johnrengelman.shadow") version "7.0.0" apply false
+    id("com.github.johnrengelman.shadow") version "7.1.0" apply false
     id("io.papermc.paperweight.patcher") version "1.1.11"
 }
 
@@ -14,9 +14,9 @@ repositories {
 }
 
 dependencies {
-    remapper("org.quiltmc:tiny-remapper:0.4.3")
+    remapper("net.fabricmc:tiny-remapper:0.7.0:fat")
     decompiler("net.minecraftforge:forgeflower:1.5.498.12")
-    paperclip("io.papermc:paperclip:2.0.1")
+    paperclip("io.papermc:paperclip:3.0.2")
 }
 
 subprojects {
@@ -24,13 +24,13 @@ subprojects {
 
     java {
         toolchain {
-            languageVersion.set(JavaLanguageVersion.of(16))
+            languageVersion.set(JavaLanguageVersion.of(17))
         }
     }
 
     tasks.withType<JavaCompile>().configureEach {
         options.encoding = "UTF-8"
-        options.release.set(16)
+        options.release.set(17)
     }
 
     repositories {
@@ -47,7 +47,7 @@ subprojects {
 paperweight {
     serverProject.set(project(":Utopia-Server"))
 
-    remapRepo.set("https://maven.quiltmc.org/repository/release/")
+    remapRepo.set("https://maven.fabricmc.net/")
     decompileRepo.set("https://files.minecraftforge.net/maven/")
 
     usePaperUpstream(providers.gradleProperty("paperRef")) {
