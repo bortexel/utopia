@@ -1,9 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: RuscalWorld <me@ruscalworld.ru>
-Date: Tue, 6 Jul 2021 23:01:10 +0300
-Subject: [PATCH] Implement performance watchdog and auto config control
+Date: Mon, 27 Dec 2021 19:59:37 +0300
+Subject: [PATCH] Merge upstream
 
-Adds an ability to enable automatic change of some config values such as spawn limits depending on current server TPS. Also adds an utopia.yml file with config for performance watchdog.
 
 diff --git a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
 index 38a0fb9a7c4ade9cacfd30dffabfea7e6b773981..a810900abd47e66a2594a721b70b997714da830c 100644
@@ -32,34 +31,10 @@ index 38a0fb9a7c4ade9cacfd30dffabfea7e6b773981..a810900abd47e66a2594a721b70b9977
          this.setFlightAllowed(dedicatedserverproperties.allowFlight);
          this.setResourcePack(dedicatedserverproperties.resourcePack, this.getPackHash());
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index 54b9a776a911d414fa09c3e36c7e2063043c4ad2..ef7d0a5b80c9210381f853b4f43a47568e6c1374 100644
+index 47b22c5d65cb2ba27580d7a72e41fff24b01fa84..783de47a5abc991ef86bea0aba391f6a4a7da8d4 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-@@ -28,22 +28,7 @@ import java.io.IOException;
- import java.io.InputStreamReader;
- import java.nio.ByteBuffer;
- import java.nio.charset.StandardCharsets;
--import java.util.ArrayList;
--import java.util.Arrays;
--import java.util.Base64;
--import java.util.Collections;
--import java.util.HashSet;
--import java.util.Iterator;
--import java.util.LinkedHashMap;
--import java.util.LinkedHashSet;
--import java.util.List;
--import java.util.Map;
--import java.util.Objects;
--import java.util.Optional;
--import java.util.Properties;
--import java.util.Random;
--import java.util.Set;
--import java.util.UUID;
-+import java.util.*;
- import java.util.function.Consumer;
- import java.util.logging.Level;
- import java.util.logging.Logger;
-@@ -250,6 +235,9 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
+@@ -249,6 +249,9 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
  import org.yaml.snakeyaml.error.MarkedYAMLException;
  
  import net.md_5.bungee.api.chat.BaseComponent; // Spigot
@@ -69,7 +44,7 @@ index 54b9a776a911d414fa09c3e36c7e2063043c4ad2..ef7d0a5b80c9210381f853b4f43a4756
  
  import javax.annotation.Nullable; // Paper
  import javax.annotation.Nonnull; // Paper
-@@ -380,6 +368,12 @@ public final class CraftServer implements Server {
+@@ -379,6 +382,12 @@ public final class CraftServer implements Server {
          this.minimumAPI = this.configuration.getString("settings.minimum-api");
          this.loadIcon();
          datapackManager = new io.papermc.paper.datapack.PaperDatapackManager(console.getPackRepository()); // Paper
@@ -82,7 +57,7 @@ index 54b9a776a911d414fa09c3e36c7e2063043c4ad2..ef7d0a5b80c9210381f853b4f43a4756
      }
  
      public boolean getCommandBlockOverride(String command) {
-@@ -694,7 +688,7 @@ public final class CraftServer implements Server {
+@@ -693,7 +702,7 @@ public final class CraftServer implements Server {
  
      @Override
      public int getViewDistance() {
@@ -91,7 +66,7 @@ index 54b9a776a911d414fa09c3e36c7e2063043c4ad2..ef7d0a5b80c9210381f853b4f43a4756
      }
  
      @Override
-@@ -933,6 +927,7 @@ public final class CraftServer implements Server {
+@@ -952,6 +961,7 @@ public final class CraftServer implements Server {
  
          org.spigotmc.SpigotConfig.init((File) console.options.valueOf("spigot-settings")); // Spigot
          com.destroystokyo.paper.PaperConfig.init((File) console.options.valueOf("paper-settings")); // Paper
@@ -99,7 +74,7 @@ index 54b9a776a911d414fa09c3e36c7e2063043c4ad2..ef7d0a5b80c9210381f853b4f43a4756
          for (ServerLevel world : this.console.getAllLevels()) {
              // world.serverLevelData.setDifficulty(config.difficulty); // Paper - per level difficulty
              world.setSpawnSettings(world.serverLevelData.getDifficulty() != Difficulty.PEACEFUL && config.spawnMonsters, config.spawnAnimals); // Paper - per level difficulty (from MinecraftServer#setDifficulty(ServerLevel, Difficulty, boolean))
-@@ -2102,22 +2097,22 @@ public final class CraftServer implements Server {
+@@ -2113,22 +2123,22 @@ public final class CraftServer implements Server {
  
      @Override
      public int getMonsterSpawnLimit() {
@@ -126,7 +101,7 @@ index 54b9a776a911d414fa09c3e36c7e2063043c4ad2..ef7d0a5b80c9210381f853b4f43a4756
      }
  
      @Override
-@@ -2127,7 +2122,7 @@ public final class CraftServer implements Server {
+@@ -2138,7 +2148,7 @@ public final class CraftServer implements Server {
  
      @Override
      public int getAmbientSpawnLimit() {
@@ -136,7 +111,7 @@ index 54b9a776a911d414fa09c3e36c7e2063043c4ad2..ef7d0a5b80c9210381f853b4f43a4756
  
      @Override
 diff --git a/src/main/java/org/bukkit/craftbukkit/Main.java b/src/main/java/org/bukkit/craftbukkit/Main.java
-index 450518903c0a10301b177d8dd7fe05aca3b8b37e..94f91e2e778e816dfa1fdbb29af59def8607fc88 100644
+index 55bae3efbc630be6d40d415509de4c3e744a5004..08d3a940a64843412208e1fc68b100bef7124485 100644
 --- a/src/main/java/org/bukkit/craftbukkit/Main.java
 +++ b/src/main/java/org/bukkit/craftbukkit/Main.java
 @@ -153,6 +153,14 @@ public class Main {
