@@ -34,7 +34,7 @@ jobs:
       - name: Apply patches
         run: ./gradlew applyPatches
       - name: Build Paperclip
-        run: ./gradlew paperclip
+        run: ./gradlew createReobfPaperclipJar
       - name: Upload build artifacts
         uses: actions/upload-artifact@v2
         with:

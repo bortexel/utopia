@@ -58,7 +58,6 @@ paperweight {
 
     useStandardUpstream("pufferfish") {
         url.set(github("pufferfish-gg", "Pufferfish"))
-//        url.set("https://github.com/pufferfish-gg/Pufferfish.git")
         ref.set(providers.gradleProperty("pufferfishRef"))
 
         withStandardPatcher {
