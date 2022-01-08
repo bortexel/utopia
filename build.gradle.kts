@@ -46,6 +46,7 @@ subprojects {
     repositories {
         mavenCentral()
         maven("https://papermc.io/repo/repository/maven-public/")
+        maven("https://jitpack.io")
     }
 }
 
@@ -55,13 +56,19 @@ paperweight {
     remapRepo.set("https://maven.fabricmc.net/")
     decompileRepo.set("https://files.minecraftforge.net/maven/")
 
-    usePaperUpstream(providers.gradleProperty("paperRef")) {
-        withPaperPatcher {
+    useStandardUpstream("pufferfish") {
+        url.set(github("pufferfish-gg", "Pufferfish"))
+//        url.set("https://github.com/pufferfish-gg/Pufferfish.git")
+        ref.set(providers.gradleProperty("pufferfishRef"))
+
+        withStandardPatcher {
             apiPatchDir.set(layout.projectDirectory.dir("patches/api"))
             apiOutputDir.set(layout.projectDirectory.dir("utopia-api"))
+            apiSourceDirPath.set("pufferfish-api")
 
             serverPatchDir.set(layout.projectDirectory.dir("patches/server"))
             serverOutputDir.set(layout.projectDirectory.dir("utopia-server"))
+            serverSourceDirPath.set("pufferfish-server")
         }
     }
 }

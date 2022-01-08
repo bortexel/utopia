@@ -6,7 +6,7 @@ Subject: [PATCH] Masquerade protected commands
 Add option in utopia.yml that allows to replace "no permission" message with "unknown command" message, so players will not be able to determine if the protected command exist on server.
 
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index cfc857c2e077a1f627c11a65d845b5a8a8d702e2..9d27146f4c7b23143eaef60829d5e4bacb8c3b3e 100644
+index 1f45b04f3cd3645b0fb3b994b27609cfaa04662b..1284d331c441519853c051fe559022981f3052b2 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 @@ -4,7 +4,6 @@ import com.google.common.base.Charsets;
@@ -48,7 +48,7 @@ index cfc857c2e077a1f627c11a65d845b5a8a8d702e2..9d27146f4c7b23143eaef60829d5e4ba
  import net.minecraft.resources.ResourceKey;
  import net.minecraft.resources.ResourceLocation;
  import net.minecraft.server.ConsoleInput;
-@@ -2783,6 +2779,8 @@ public final class CraftServer implements Server {
+@@ -2788,6 +2784,8 @@ public final class CraftServer implements Server {
  
      @Override
      public String getPermissionMessage() {
@@ -58,10 +58,10 @@ index cfc857c2e077a1f627c11a65d845b5a8a8d702e2..9d27146f4c7b23143eaef60829d5e4ba
      }
  
 diff --git a/src/main/java/ru/bortexel/utopia/UtopiaConfig.java b/src/main/java/ru/bortexel/utopia/UtopiaConfig.java
-index 21e35a3c63784dea160210d9e8ae6db0988e6c7b..52df33a8ea0c8fdc9e8276c750109a4e6106ad71 100644
+index 1307e823962c63f5644b999ce0f3c80800b2ba24..2aae07d298de57c670dd695b54730bc8bb6771f2 100644
 --- a/src/main/java/ru/bortexel/utopia/UtopiaConfig.java
 +++ b/src/main/java/ru/bortexel/utopia/UtopiaConfig.java
-@@ -124,4 +124,10 @@ public class UtopiaConfig {
+@@ -125,4 +125,10 @@ public class UtopiaConfig {
      private static void loadControlledProperty(ControlledProperty property) {
          controlledProperties.put(property.getName(), property);
      }

@@ -1,25 +1,33 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: RuscalWorld <me@ruscalworld.ru>
-Date: Mon, 27 Dec 2021 21:00:13 +0300
+Date: Sat, 8 Jan 2022 19:28:33 +0300
 Subject: [PATCH] Implement performance watchdog
 
-Adds an ability to enable automatic change of some config values such as spawn limits depending on current server TPS. Also adds an utopia.yml file with config for performance watchdog.
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 481a5dbad82f3f8dd5b1bf8ab207d82ec73d5bbd..6f8d497ff1341d67748db07d4b691fa287a421dd 100644
+index 1e7ae166a1d53fce28297e2eaebd11ec28a57a55..a2520627a43d9b42116e5f8f126b10d937c0807f 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
-@@ -1709,7 +1709,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -310,7 +310,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+ 
+     public volatile Thread shutdownThread; // Paper
+     public volatile boolean abnormalExit = false; // Paper
+-    
++
+     public gg.pufferfish.pufferfish.util.AsyncExecutor mobSpawnExecutor = new gg.pufferfish.pufferfish.util.AsyncExecutor("MobSpawning", () -> true); // Pufferfish - optimize mob spawning
+ 
+     public static <S extends MinecraftServer> S spin(Function<Thread, S> serverFactory) {
+@@ -1711,7 +1711,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
  
      @DontObfuscate
      public String getServerModName() {
--        return "Paper"; // Paper - Paper > // Spigot - Spigot > // CraftBukkit - cb > vanilla!
+-        return "Pufferfish"; // Pufferfish - Pufferfish > // Paper - Paper > // Spigot - Spigot > // CraftBukkit - cb > vanilla!
 +        return "Utopia"; // Utopia - Utopia > // Paper - Paper > // Spigot - Spigot > // CraftBukkit - cb > vanilla!
      }
  
      public SystemReport fillSystemReport(SystemReport details) {
 diff --git a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
-index 38a0fb9a7c4ade9cacfd30dffabfea7e6b773981..a810900abd47e66a2594a721b70b997714da830c 100644
+index aae2dadabedb075fd1bc712f0226882b85f4551d..46d9a0e646fca8eae9cc6521b694e1c6a31b10d2 100644
 --- a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
 +++ b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
 @@ -6,10 +6,8 @@ import com.mojang.authlib.GameProfile;
@@ -35,9 +43,9 @@ index 38a0fb9a7c4ade9cacfd30dffabfea7e6b773981..a810900abd47e66a2594a721b70b9977
  import java.net.InetAddress;
  import java.net.Proxy;
  import java.nio.charset.StandardCharsets;
-@@ -233,6 +231,8 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
-         io.papermc.paper.brigadier.PaperBrigadierProviderImpl.INSTANCE.getClass(); // init PaperBrigadierProvider
-         // Paper end
+@@ -235,6 +233,8 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
+         gg.pufferfish.pufferfish.PufferfishConfig.load(); // Pufferfish
+         gg.pufferfish.pufferfish.PufferfishCommand.init(); // Pufferfish
  
 +        ru.bortexel.utopia.UtopiaConfig.init((File) options.valueOf("utopia-settings"));
 +
@@ -45,7 +53,7 @@ index 38a0fb9a7c4ade9cacfd30dffabfea7e6b773981..a810900abd47e66a2594a721b70b9977
          this.setFlightAllowed(dedicatedserverproperties.allowFlight);
          this.setResourcePack(dedicatedserverproperties.resourcePack, this.getPackHash());
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index ba7023e7ca5d29375ff53c2951892138d155f69f..cfc857c2e077a1f627c11a65d845b5a8a8d702e2 100644
+index 041ebfefca8f944f457a269f0e0b450b21949e73..1f45b04f3cd3645b0fb3b994b27609cfaa04662b 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 @@ -49,6 +49,7 @@ import java.util.function.Consumer;
@@ -68,7 +76,7 @@ index ba7023e7ca5d29375ff53c2951892138d155f69f..cfc857c2e077a1f627c11a65d845b5a8
  import javax.annotation.Nonnull; // Paper
  
  public final class CraftServer implements Server {
--    private final String serverName = "Paper"; // Paper
+-    private final String serverName = "Pufferfish"; // Paper // Pufferfish
 +    private final String serverName = "Utopia"; // Utopia
      private final String serverVersion;
      private final String bukkitVersion = Versioning.getBukkitVersion();
@@ -103,7 +111,7 @@ index ba7023e7ca5d29375ff53c2951892138d155f69f..cfc857c2e077a1f627c11a65d845b5a8
          for (ServerLevel world : this.console.getAllLevels()) {
              // world.serverLevelData.setDifficulty(config.difficulty); // Paper - per level difficulty
              world.setSpawnSettings(world.serverLevelData.getDifficulty() != Difficulty.PEACEFUL && config.spawnMonsters, config.spawnAnimals); // Paper - per level difficulty (from MinecraftServer#setDifficulty(ServerLevel, Difficulty, boolean))
-@@ -2113,22 +2124,22 @@ public final class CraftServer implements Server {
+@@ -2118,32 +2129,32 @@ public final class CraftServer implements Server {
  
      @Override
      public int getMonsterSpawnLimit() {
@@ -130,7 +138,10 @@ index ba7023e7ca5d29375ff53c2951892138d155f69f..cfc857c2e077a1f627c11a65d845b5a8
      }
  
      @Override
-@@ -2138,7 +2149,7 @@ public final class CraftServer implements Server {
+     public int getWaterUndergroundCreatureSpawnLimit() {
+-        return this.waterUndergroundCreatureSpawn;
++        return PropertyPool.waterUndergroundCreatureSpawnLimit; // Utopia
+     }
  
      @Override
      public int getAmbientSpawnLimit() {
@@ -159,24 +170,24 @@ index 55bae3efbc630be6d40d415509de4c3e744a5004..08d3a940a64843412208e1fc68b100be
                  acceptsAll(asList("server-name"), "Name of the server")
                          .withRequiredArg()
 diff --git a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
-index 774556a62eb240da42e84db4502e2ed43495be17..4b2ffe9ab30a8eee094bb274ad2b992256c1201c 100644
+index 80553face9c70c2a3d897681e7761df85b22d464..4b2ffe9ab30a8eee094bb274ad2b992256c1201c 100644
 --- a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
 +++ b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
 @@ -11,7 +11,7 @@ public final class Versioning {
      public static String getBukkitVersion() {
          String result = "Unknown-Version";
  
--        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/io.papermc.paper/paper-api/pom.properties");
+-        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/gg.pufferfish.pufferfish/pufferfish-api/pom.properties"); // Pufferfish
 +        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/ru.bortexel.utopia/utopia-api/pom.properties");
          Properties properties = new Properties();
  
          if (stream != null) {
 diff --git a/src/main/java/ru/bortexel/utopia/UtopiaConfig.java b/src/main/java/ru/bortexel/utopia/UtopiaConfig.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..21e35a3c63784dea160210d9e8ae6db0988e6c7b
+index 0000000000000000000000000000000000000000..1307e823962c63f5644b999ce0f3c80800b2ba24
 --- /dev/null
 +++ b/src/main/java/ru/bortexel/utopia/UtopiaConfig.java
-@@ -0,0 +1,127 @@
+@@ -0,0 +1,128 @@
 +package ru.bortexel.utopia;
 +
 +import com.google.common.base.Throwables;
@@ -292,6 +303,7 @@ index 0000000000000000000000000000000000000000..21e35a3c63784dea160210d9e8ae6db0
 +            loadControlledProperty(new ControlledProperty("water-animal-limit", 1, 5, 7));
 +            loadControlledProperty(new ControlledProperty("ambient-limit", 2, 15, 7));
 +            loadControlledProperty(new ControlledProperty("water-ambient-limit", 2, 20, 5));
++            loadControlledProperty(new ControlledProperty("water-underground-creature-limit", 1, 5, 7));
 +        }
 +
 +        configManagementEnableFrom = Time.valueOf(getString(MANAGEMENT_ROOT + ".enable.from", "00:00:00"));
@@ -348,10 +360,10 @@ index 0000000000000000000000000000000000000000..3d00d5837a786fc80955d1c814321b74
 +}
 diff --git a/src/main/java/ru/bortexel/utopia/management/PerformanceWatchdog.java b/src/main/java/ru/bortexel/utopia/management/PerformanceWatchdog.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..fdb33b35080d095a47244d90e97a21b8527a7a43
+index 0000000000000000000000000000000000000000..9cf3a432037152201f5702c77c9fec2fe1bdffdb
 --- /dev/null
 +++ b/src/main/java/ru/bortexel/utopia/management/PerformanceWatchdog.java
-@@ -0,0 +1,40 @@
+@@ -0,0 +1,49 @@
 +package ru.bortexel.utopia.management;
 +
 +import net.minecraft.server.MinecraftServer;
@@ -380,13 +392,22 @@ index 0000000000000000000000000000000000000000..fdb33b35080d095a47244d90e97a21b8
 +            ControlledProperty waterAnimalSpawnLimit = UtopiaConfig.controlledProperties.get("water-animal-limit");
 +            ControlledProperty ambientSpawnLimit = UtopiaConfig.controlledProperties.get("ambient-limit");
 +            ControlledProperty waterAmbientSpawnLimit = UtopiaConfig.controlledProperties.get("water-ambient-limit");
++            ControlledProperty waterUndergroundCreatureSpawnLimit = UtopiaConfig.controlledProperties.get("water-ambient-underground-creature-limit");
 +
-+            if (viewDistance != null) PropertyPool.viewDistance = ((int) Math.round(viewDistance.getValue(rate)));
-+            if (monsterSpawnLimit != null) PropertyPool.monsterSpawnLimit = ((int) Math.round(monsterSpawnLimit.getValue(rate)));
-+            if (animalSpawnLimit != null) PropertyPool.animalSpawnLimit = ((int) Math.round(animalSpawnLimit.getValue(rate)));
-+            if (waterAnimalSpawnLimit != null) PropertyPool.waterAnimalSpawnLimit = ((int) Math.round(waterAnimalSpawnLimit.getValue(rate)));
-+            if (ambientSpawnLimit != null) PropertyPool.ambientSpawnLimit = ((int) Math.round(ambientSpawnLimit.getValue(rate)));
-+            if (waterAmbientSpawnLimit != null) PropertyPool.waterAmbientSpawnLimit = ((int) Math.round(waterAmbientSpawnLimit.getValue(rate)));
++            if (viewDistance != null)
++                PropertyPool.viewDistance = (int) Math.round(viewDistance.getValue(rate));
++            if (monsterSpawnLimit != null)
++                PropertyPool.monsterSpawnLimit = (int) Math.round(monsterSpawnLimit.getValue(rate));
++            if (animalSpawnLimit != null)
++                PropertyPool.animalSpawnLimit = (int) Math.round(animalSpawnLimit.getValue(rate));
++            if (waterAnimalSpawnLimit != null)
++                PropertyPool.waterAnimalSpawnLimit = (int) Math.round(waterAnimalSpawnLimit.getValue(rate));
++            if (ambientSpawnLimit != null)
++                PropertyPool.ambientSpawnLimit = (int) Math.round(ambientSpawnLimit.getValue(rate));
++            if (waterAmbientSpawnLimit != null)
++                PropertyPool.waterAmbientSpawnLimit = (int) Math.round(waterAmbientSpawnLimit.getValue(rate));
++            if (waterUndergroundCreatureSpawnLimit != null)
++                PropertyPool.waterUndergroundCreatureSpawnLimit = (int) Math.round(waterUndergroundCreatureSpawnLimit.getValue(rate));
 +        } catch (Exception e) {
 +            Bukkit.getLogger().warning("Performance Watchdog failure: " + e.getLocalizedMessage());
 +        }
@@ -394,10 +415,10 @@ index 0000000000000000000000000000000000000000..fdb33b35080d095a47244d90e97a21b8
 +}
 diff --git a/src/main/java/ru/bortexel/utopia/management/PropertyPool.java b/src/main/java/ru/bortexel/utopia/management/PropertyPool.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..da419b95f2f6be917b7828df0dce7bfcbf9f96db
+index 0000000000000000000000000000000000000000..f752d8b25f978941b2428f55243968ce46636fc9
 --- /dev/null
 +++ b/src/main/java/ru/bortexel/utopia/management/PropertyPool.java
-@@ -0,0 +1,22 @@
+@@ -0,0 +1,24 @@
 +package ru.bortexel.utopia.management;
 +
 +import net.minecraft.server.dedicated.DedicatedServerProperties;
@@ -410,6 +431,7 @@ index 0000000000000000000000000000000000000000..da419b95f2f6be917b7828df0dce7bfc
 +    public static Integer waterAnimalSpawnLimit = 5;
 +    public static Integer ambientSpawnLimit = 15;
 +    public static Integer waterAmbientSpawnLimit = 20;
++    public static Integer waterUndergroundCreatureSpawnLimit = 5;
 +
 +    public static void loadDefault(DedicatedServerProperties properties, CraftServer server) {
 +        viewDistance = properties.viewDistance;
@@ -418,5 +440,6 @@ index 0000000000000000000000000000000000000000..da419b95f2f6be917b7828df0dce7bfc
 +        waterAnimalSpawnLimit = server.getWaterAnimalSpawnLimit();
 +        ambientSpawnLimit = server.getAmbientSpawnLimit();
 +        waterAmbientSpawnLimit = server.getWaterAmbientSpawnLimit();
++        waterUndergroundCreatureSpawnLimit = server.getWaterUndergroundCreatureSpawnLimit();
 +    }
 +}
