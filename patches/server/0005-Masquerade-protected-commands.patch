@@ -1,27 +1,29 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: RuscalWorld <me@ruscalworld.ru>
-Date: Fri, 4 Mar 2022 19:46:51 +0300
+Date: Sun, 12 Jun 2022 16:27:41 +0300
 Subject: [PATCH] Masquerade protected commands
 
 
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index b4493c0622f63a579527bcff1cbd26038fff3b5a..fa106f48271df39401adeb2ee68cde00202f3400 100644
+index c8f1eabe8f5d0fad8bf645e66e2874ce1b6f294b..35c9dd846406e91b24d5cfd6d6085e0346044cd4 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-@@ -2811,6 +2811,8 @@ public final class CraftServer implements Server {
+@@ -2815,6 +2815,10 @@ public final class CraftServer implements Server {
  
      @Override
      public String getPermissionMessage() {
++        // Utopia start
 +        if (ru.bortexel.utopia.UtopiaConfig.masqueradeProtectedCommands)
 +            return org.spigotmc.SpigotConfig.unknownCommandMessage;
-         return com.destroystokyo.paper.PaperConfig.noPermissionMessage;
++        // Utopia end
+         return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacyAmpersand().serialize(io.papermc.paper.configuration.GlobalConfiguration.get().messages.noPermission);
      }
  
 diff --git a/src/main/java/ru/bortexel/utopia/UtopiaConfig.java b/src/main/java/ru/bortexel/utopia/UtopiaConfig.java
-index 58e11ac13d95b6c506cbdf150a010708dc6c2d3c..59e5b3e143fcce7d5ba8aec293e4721b011f2a5b 100644
+index b6afe711cad47e34280b7b44e363ca770c1494b3..66808fd60b1e01d31f62b7bab844e5f17887522c 100644
 --- a/src/main/java/ru/bortexel/utopia/UtopiaConfig.java
 +++ b/src/main/java/ru/bortexel/utopia/UtopiaConfig.java
-@@ -126,4 +126,10 @@ public class UtopiaConfig {
+@@ -128,4 +128,10 @@ public class UtopiaConfig {
      private static void loadControlledProperty(ControlledProperty property) {
          controlledProperties.put(property.getName(), property);
      }

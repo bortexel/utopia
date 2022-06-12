@@ -1,46 +1,27 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: RuscalWorld <me@ruscalworld.ru>
-Date: Fri, 4 Mar 2022 19:41:01 +0300
+Date: Sun, 12 Jun 2022 16:24:32 +0300
 Subject: [PATCH] Implement performance watchdog
 
 
-diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index d3319f194b23e0c27181828d3d5a2b8830124818..fadb230d5cef52ca7a098b5008ae3ece480e22c0 100644
---- a/src/main/java/net/minecraft/server/MinecraftServer.java
-+++ b/src/main/java/net/minecraft/server/MinecraftServer.java
-@@ -310,7 +310,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
- 
-     public volatile Thread shutdownThread; // Paper
-     public volatile boolean abnormalExit = false; // Paper
--    
-+
-     public gg.pufferfish.pufferfish.util.AsyncExecutor mobSpawnExecutor = new gg.pufferfish.pufferfish.util.AsyncExecutor("MobSpawning", () -> true); // Pufferfish - optimize mob spawning
- 
-     public static <S extends MinecraftServer> S spin(Function<Thread, S> serverFactory) {
-@@ -1685,7 +1685,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
- 
-     @DontObfuscate
-     public String getServerModName() {
--        return "Pufferfish"; // Pufferfish - Pufferfish > // Paper - Paper > // Spigot - Spigot > // CraftBukkit - cb > vanilla!
-+        return "Utopia"; // Utopia - Utopia > // Paper - Paper > // Spigot - Spigot > // CraftBukkit - cb > vanilla!
-     }
- 
-     public SystemReport fillSystemReport(SystemReport details) {
 diff --git a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
-index 27e90ca03275a42271bbe97ee1a63a355b098ede..e49421aa1de95eecb9635a7f05068b59838445f7 100644
+index 5d6ceeecfbb55a1bfe77a1f1ac39b02993e714e3..82ccc8455c257a61007c59238a210ad9d8a82ac0 100644
 --- a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
 +++ b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
-@@ -6,7 +6,9 @@ import com.mojang.authlib.GameProfile;
- import com.mojang.authlib.GameProfileRepository;
- import com.mojang.authlib.minecraft.MinecraftSessionService;
+@@ -4,10 +4,8 @@ import com.google.common.collect.Lists;
+ import com.mojang.authlib.GameProfile;
  import com.mojang.datafixers.DataFixer;
-+
  import com.mojang.logging.LogUtils;
-+import java.io.File;
- import java.io.BufferedReader;
- import java.io.BufferedWriter;
- import java.io.IOException;
-@@ -238,6 +240,8 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
+-import java.io.BufferedReader;
+-import java.io.BufferedWriter;
+-import java.io.IOException;
+-import java.io.InputStreamReader;
++
++import java.io.*;
+ import java.net.InetAddress;
+ import java.net.Proxy;
+ import java.nio.charset.StandardCharsets;
+@@ -229,6 +227,8 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
          gg.pufferfish.pufferfish.PufferfishConfig.load(); // Pufferfish
          gg.pufferfish.pufferfish.PufferfishCommand.init(); // Pufferfish
  
@@ -48,37 +29,44 @@ index 27e90ca03275a42271bbe97ee1a63a355b098ede..e49421aa1de95eecb9635a7f05068b59
 +
          this.setPvpAllowed(dedicatedserverproperties.pvp);
          this.setFlightAllowed(dedicatedserverproperties.allowFlight);
-         this.setResourcePack(dedicatedserverproperties.resourcePack, this.getPackHash());
+         this.setMotd(dedicatedserverproperties.motd);
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index cc88eb1247bafb65999e1ca5624c87b038b27866..b4493c0622f63a579527bcff1cbd26038fff3b5a 100644
+index 6495a30b39c991da7fcf3606f043aa451a1f351f..c8f1eabe8f5d0fad8bf645e66e2874ce1b6f294b 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-@@ -44,6 +44,7 @@ import java.util.function.Consumer;
+@@ -25,20 +25,7 @@ import java.io.IOException;
+ import java.io.InputStreamReader;
+ import java.nio.ByteBuffer;
+ import java.nio.charset.StandardCharsets;
+-import java.util.ArrayList;
+-import java.util.Base64;
+-import java.util.Collections;
+-import java.util.HashSet;
+-import java.util.Iterator;
+-import java.util.LinkedHashMap;
+-import java.util.LinkedHashSet;
+-import java.util.List;
+-import java.util.Locale;
+-import java.util.Map;
+-import java.util.Objects;
+-import java.util.Optional;
+-import java.util.Set;
+-import java.util.UUID;
++import java.util.*;
+ import java.util.function.Consumer;
  import java.util.logging.Level;
  import java.util.logging.Logger;
- import java.util.stream.Collectors;
-+import java.util.Timer;
- import javax.imageio.ImageIO;
- import net.minecraft.advancements.Advancement;
- import net.minecraft.commands.CommandSourceStack;
-@@ -243,12 +244,15 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
+@@ -238,6 +225,9 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
  import org.yaml.snakeyaml.error.MarkedYAMLException;
  
  import net.md_5.bungee.api.chat.BaseComponent; // Spigot
 +import ru.bortexel.utopia.UtopiaConfig;
 +import ru.bortexel.utopia.management.PerformanceWatchdog;
-+import ru.bortexel.utopia.management.PropertyPool; // Utopia
++import ru.bortexel.utopia.management.PropertyPool;
  
  import javax.annotation.Nullable; // Paper
  import javax.annotation.Nonnull; // Paper
- 
- public final class CraftServer implements Server {
--    private final String serverName = "Pufferfish"; // Paper // Pufferfish
-+    private final String serverName = "Utopia"; // Utopia
-     private final String serverVersion;
-     private final String bukkitVersion = Versioning.getBukkitVersion();
-     private final Logger logger = Logger.getLogger("Minecraft");
-@@ -366,6 +370,12 @@ public final class CraftServer implements Server {
+@@ -361,6 +351,12 @@ public final class CraftServer implements Server {
          this.minimumAPI = this.configuration.getString("settings.minimum-api");
          this.loadIcon();
          datapackManager = new io.papermc.paper.datapack.PaperDatapackManager(console.getPackRepository()); // Paper
@@ -91,7 +79,7 @@ index cc88eb1247bafb65999e1ca5624c87b038b27866..b4493c0622f63a579527bcff1cbd2603
      }
  
      public boolean getCommandBlockOverride(String command) {
-@@ -383,6 +393,12 @@ public final class CraftServer implements Server {
+@@ -378,6 +374,12 @@ public final class CraftServer implements Server {
      private void overrideSpawnLimits() {
          for (SpawnCategory spawnCategory : SpawnCategory.values()) {
              if (CraftSpawnCategory.isValidForLimits(spawnCategory)) {
@@ -104,7 +92,7 @@ index cc88eb1247bafb65999e1ca5624c87b038b27866..b4493c0622f63a579527bcff1cbd2603
                  this.spawnCategoryLimit.put(spawnCategory, this.configuration.getInt(CraftSpawnCategory.getConfigNameSpawnLimit(spawnCategory)));
              }
          }
-@@ -688,7 +704,7 @@ public final class CraftServer implements Server {
+@@ -683,7 +685,7 @@ public final class CraftServer implements Server {
  
      @Override
      public int getViewDistance() {
@@ -113,15 +101,15 @@ index cc88eb1247bafb65999e1ca5624c87b038b27866..b4493c0622f63a579527bcff1cbd2603
      }
  
      @Override
-@@ -955,6 +971,7 @@ public final class CraftServer implements Server {
+@@ -950,6 +952,7 @@ public final class CraftServer implements Server {
  
          org.spigotmc.SpigotConfig.init((File) console.options.valueOf("spigot-settings")); // Spigot
-         com.destroystokyo.paper.PaperConfig.init((File) console.options.valueOf("paper-settings")); // Paper
+         this.console.paperConfigurations.reloadConfigs(this.console);
 +        ru.bortexel.utopia.UtopiaConfig.init((File) console.options.valueOf("utopia-settings")); // Utopia
          for (ServerLevel world : this.console.getAllLevels()) {
              // world.serverLevelData.setDifficulty(config.difficulty); // Paper - per level difficulty
              world.setSpawnSettings(world.serverLevelData.getDifficulty() != Difficulty.PEACEFUL && config.spawnMonsters, config.spawnAnimals); // Paper - per level difficulty (from MinecraftServer#setDifficulty(ServerLevel, Difficulty, boolean))
-@@ -2159,6 +2176,11 @@ public final class CraftServer implements Server {
+@@ -2153,6 +2156,11 @@ public final class CraftServer implements Server {
      }
      public int getSpawnLimitUnsafe(final SpawnCategory spawnCategory) {
          // Paper end
@@ -134,10 +122,10 @@ index cc88eb1247bafb65999e1ca5624c87b038b27866..b4493c0622f63a579527bcff1cbd2603
      }
  
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
-index b2c5fbfcb64f3056d7975db43b2db45bfd5e9890..c89b4146210b26aa3bb97e18dc59276d2d515d2e 100644
+index 25e56be9055c5c432e1180d45341f4e9d9fcb7ca..8befe8defc2ea4c14411cc7023428f476c971d30 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
-@@ -128,6 +128,8 @@ import org.bukkit.util.BoundingBox;
+@@ -129,6 +129,8 @@ import org.bukkit.util.BoundingBox;
  import org.bukkit.util.Consumer;
  import org.bukkit.util.RayTraceResult;
  import org.bukkit.util.Vector;
@@ -146,7 +134,7 @@ index b2c5fbfcb64f3056d7975db43b2db45bfd5e9890..c89b4146210b26aa3bb97e18dc59276d
  
  public class CraftWorld extends CraftRegionAccessor implements World {
      public static final int CUSTOM_DIMENSION_OFFSET = 10;
-@@ -1792,6 +1794,11 @@ public class CraftWorld extends CraftRegionAccessor implements World {
+@@ -1790,6 +1792,11 @@ public class CraftWorld extends CraftRegionAccessor implements World {
          return this.getSpawnLimitUnsafe(spawnCategory);
      }
      public final int getSpawnLimitUnsafe(final SpawnCategory spawnCategory) {
@@ -158,7 +146,7 @@ index b2c5fbfcb64f3056d7975db43b2db45bfd5e9890..c89b4146210b26aa3bb97e18dc59276d
          int limit = this.spawnCategoryLimit.getOrDefault(spawnCategory, -1);
          if (limit < 0) {
              limit = this.server.getSpawnLimitUnsafe(spawnCategory);
-@@ -1805,7 +1812,8 @@ public class CraftWorld extends CraftRegionAccessor implements World {
+@@ -1803,7 +1810,8 @@ public class CraftWorld extends CraftRegionAccessor implements World {
          Validate.notNull(spawnCategory, "SpawnCategory cannot be null");
          Validate.isTrue(CraftSpawnCategory.isValidForLimits(spawnCategory), "SpawnCategory." + spawnCategory + " are not supported.");
  
@@ -169,7 +157,7 @@ index b2c5fbfcb64f3056d7975db43b2db45bfd5e9890..c89b4146210b26aa3bb97e18dc59276d
  
      @Override
 diff --git a/src/main/java/org/bukkit/craftbukkit/Main.java b/src/main/java/org/bukkit/craftbukkit/Main.java
-index afcc80d1f79d1743b0940c69858eacec88fec889..37b99e9f1374a45d371897b990105b67e06faabd 100644
+index 344d93f1d7f25a3f26064469e78dd698af66dc0d..bfe03b0a3cc30525ae603b88085772027a956e7e 100644
 --- a/src/main/java/org/bukkit/craftbukkit/Main.java
 +++ b/src/main/java/org/bukkit/craftbukkit/Main.java
 @@ -153,6 +153,14 @@ public class Main {
@@ -187,25 +175,12 @@ index afcc80d1f79d1743b0940c69858eacec88fec889..37b99e9f1374a45d371897b990105b67
                  // Paper start
                  acceptsAll(asList("server-name"), "Name of the server")
                          .withRequiredArg()
-diff --git a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
-index 80553face9c70c2a3d897681e7761df85b22d464..4b2ffe9ab30a8eee094bb274ad2b992256c1201c 100644
---- a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
-+++ b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
-@@ -11,7 +11,7 @@ public final class Versioning {
-     public static String getBukkitVersion() {
-         String result = "Unknown-Version";
- 
--        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/gg.pufferfish.pufferfish/pufferfish-api/pom.properties"); // Pufferfish
-+        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/ru.bortexel.utopia/utopia-api/pom.properties");
-         Properties properties = new Properties();
- 
-         if (stream != null) {
 diff --git a/src/main/java/ru/bortexel/utopia/UtopiaConfig.java b/src/main/java/ru/bortexel/utopia/UtopiaConfig.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..58e11ac13d95b6c506cbdf150a010708dc6c2d3c
+index 0000000000000000000000000000000000000000..b6afe711cad47e34280b7b44e363ca770c1494b3
 --- /dev/null
 +++ b/src/main/java/ru/bortexel/utopia/UtopiaConfig.java
-@@ -0,0 +1,129 @@
+@@ -0,0 +1,131 @@
 +package ru.bortexel.utopia;
 +
 +import com.google.common.base.Throwables;
@@ -312,6 +287,7 @@ index 0000000000000000000000000000000000000000..58e11ac13d95b6c506cbdf150a010708
 +    public static Time configManagementEnableFrom = null;
 +    public static Time configManagementEnableTill = null;
 +    public static int performanceWatchdogDelay = 60000;
++
 +    private static void configManagement() {
 +        configManagementEnabled = getBoolean(MANAGEMENT_ROOT + ".enable.value", false);
 +        if (configManagementEnabled) {
@@ -331,6 +307,7 @@ index 0000000000000000000000000000000000000000..58e11ac13d95b6c506cbdf150a010708
 +    }
 +
 +    public static HashMap<String, ControlledProperty> controlledProperties = new HashMap<>();
++
 +    private static void loadControlledProperty(ControlledProperty property) {
 +        controlledProperties.put(property.getName(), property);
 +    }
@@ -379,10 +356,10 @@ index 0000000000000000000000000000000000000000..3d00d5837a786fc80955d1c814321b74
 +}
 diff --git a/src/main/java/ru/bortexel/utopia/management/PerformanceWatchdog.java b/src/main/java/ru/bortexel/utopia/management/PerformanceWatchdog.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..9cf3a432037152201f5702c77c9fec2fe1bdffdb
+index 0000000000000000000000000000000000000000..5d007b512bdfa58b46bd8c9c692a94db36fdceee
 --- /dev/null
 +++ b/src/main/java/ru/bortexel/utopia/management/PerformanceWatchdog.java
-@@ -0,0 +1,49 @@
+@@ -0,0 +1,50 @@
 +package ru.bortexel.utopia.management;
 +
 +import net.minecraft.server.MinecraftServer;
@@ -398,7 +375,8 @@ index 0000000000000000000000000000000000000000..9cf3a432037152201f5702c77c9fec2f
 +    public void run() {
 +        Time now = Time.valueOf(LocalTime.now());
 +        if (!UtopiaConfig.configManagementEnabled) return;
-+        if (UtopiaConfig.configManagementEnableFrom.after(now) || UtopiaConfig.configManagementEnableTill.before(now)) return;
++        if (UtopiaConfig.configManagementEnableFrom.after(now) || UtopiaConfig.configManagementEnableTill.before(now))
++            return;
 +
 +        double currentTPS = Math.max(0, Bukkit.getTPS()[0] - 10);
 +        double maxTPS = MinecraftServer.TPS - 10;
