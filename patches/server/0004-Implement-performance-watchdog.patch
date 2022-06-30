@@ -31,7 +31,7 @@ index 5d6ceeecfbb55a1bfe77a1f1ac39b02993e714e3..82ccc8455c257a61007c59238a210ad9
          this.setFlightAllowed(dedicatedserverproperties.allowFlight);
          this.setMotd(dedicatedserverproperties.motd);
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index 6495a30b39c991da7fcf3606f043aa451a1f351f..c8f1eabe8f5d0fad8bf645e66e2874ce1b6f294b 100644
+index e540849249a3932bd2cd754f79fed1085d6ff98a..ae30138d5ec50ccb1845c6a50eeff95e5a473cde 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 @@ -25,20 +25,7 @@ import java.io.IOException;
@@ -56,7 +56,7 @@ index 6495a30b39c991da7fcf3606f043aa451a1f351f..c8f1eabe8f5d0fad8bf645e66e2874ce
  import java.util.function.Consumer;
  import java.util.logging.Level;
  import java.util.logging.Logger;
-@@ -238,6 +225,9 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
+@@ -240,6 +227,9 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
  import org.yaml.snakeyaml.error.MarkedYAMLException;
  
  import net.md_5.bungee.api.chat.BaseComponent; // Spigot
@@ -66,9 +66,9 @@ index 6495a30b39c991da7fcf3606f043aa451a1f351f..c8f1eabe8f5d0fad8bf645e66e2874ce
  
  import javax.annotation.Nullable; // Paper
  import javax.annotation.Nonnull; // Paper
-@@ -361,6 +351,12 @@ public final class CraftServer implements Server {
-         this.minimumAPI = this.configuration.getString("settings.minimum-api");
-         this.loadIcon();
+@@ -368,6 +358,12 @@ public final class CraftServer implements Server {
+             MapPalette.setMapColorCache(new CraftMapColorCache(this.logger));
+         }
          datapackManager = new io.papermc.paper.datapack.PaperDatapackManager(console.getPackRepository()); // Paper
 +
 +        // Utopia start
@@ -79,7 +79,7 @@ index 6495a30b39c991da7fcf3606f043aa451a1f351f..c8f1eabe8f5d0fad8bf645e66e2874ce
      }
  
      public boolean getCommandBlockOverride(String command) {
-@@ -378,6 +374,12 @@ public final class CraftServer implements Server {
+@@ -385,6 +381,12 @@ public final class CraftServer implements Server {
      private void overrideSpawnLimits() {
          for (SpawnCategory spawnCategory : SpawnCategory.values()) {
              if (CraftSpawnCategory.isValidForLimits(spawnCategory)) {
@@ -92,7 +92,7 @@ index 6495a30b39c991da7fcf3606f043aa451a1f351f..c8f1eabe8f5d0fad8bf645e66e2874ce
                  this.spawnCategoryLimit.put(spawnCategory, this.configuration.getInt(CraftSpawnCategory.getConfigNameSpawnLimit(spawnCategory)));
              }
          }
-@@ -683,7 +685,7 @@ public final class CraftServer implements Server {
+@@ -690,7 +692,7 @@ public final class CraftServer implements Server {
  
      @Override
      public int getViewDistance() {
@@ -101,7 +101,7 @@ index 6495a30b39c991da7fcf3606f043aa451a1f351f..c8f1eabe8f5d0fad8bf645e66e2874ce
      }
  
      @Override
-@@ -950,6 +952,7 @@ public final class CraftServer implements Server {
+@@ -957,6 +959,7 @@ public final class CraftServer implements Server {
  
          org.spigotmc.SpigotConfig.init((File) console.options.valueOf("spigot-settings")); // Spigot
          this.console.paperConfigurations.reloadConfigs(this.console);
@@ -109,7 +109,7 @@ index 6495a30b39c991da7fcf3606f043aa451a1f351f..c8f1eabe8f5d0fad8bf645e66e2874ce
          for (ServerLevel world : this.console.getAllLevels()) {
              // world.serverLevelData.setDifficulty(config.difficulty); // Paper - per level difficulty
              world.setSpawnSettings(world.serverLevelData.getDifficulty() != Difficulty.PEACEFUL && config.spawnMonsters, config.spawnAnimals); // Paper - per level difficulty (from MinecraftServer#setDifficulty(ServerLevel, Difficulty, boolean))
-@@ -2153,6 +2156,11 @@ public final class CraftServer implements Server {
+@@ -2175,6 +2178,11 @@ public final class CraftServer implements Server {
      }
      public int getSpawnLimitUnsafe(final SpawnCategory spawnCategory) {
          // Paper end
@@ -157,10 +157,10 @@ index 25e56be9055c5c432e1180d45341f4e9d9fcb7ca..8befe8defc2ea4c14411cc7023428f47
  
      @Override
 diff --git a/src/main/java/org/bukkit/craftbukkit/Main.java b/src/main/java/org/bukkit/craftbukkit/Main.java
-index 344d93f1d7f25a3f26064469e78dd698af66dc0d..bfe03b0a3cc30525ae603b88085772027a956e7e 100644
+index 1b9e91b20dd9a9375a0a2a6a4d7a0bcdce9e7b1a..17c198c7af3cfe6714f1cb598c7bf0a2dd4fb144 100644
 --- a/src/main/java/org/bukkit/craftbukkit/Main.java
 +++ b/src/main/java/org/bukkit/craftbukkit/Main.java
-@@ -153,6 +153,14 @@ public class Main {
+@@ -158,6 +158,14 @@ public class Main {
                          .describedAs("Jar file");
                  // Paper end
  

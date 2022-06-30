@@ -5,7 +5,7 @@ Subject: [PATCH] Build changes
 
 
 diff --git a/build.gradle.kts b/build.gradle.kts
-index 4f01bbc22b2e94d5415c36c8cd828e0551e929aa..824bbe17d2b1f15f9a1683a51ced8ede36eae3ad 100644
+index a4a146d9c3e07bdf941d81147ca31daf4689a687..92a30d4876c438692ae1e87579bbeb8e4e497cad 100644
 --- a/build.gradle.kts
 +++ b/build.gradle.kts
 @@ -9,7 +9,7 @@ plugins {
@@ -17,7 +17,7 @@ index 4f01bbc22b2e94d5415c36c8cd828e0551e929aa..824bbe17d2b1f15f9a1683a51ced8ede
      // Pufferfish start
      implementation("io.papermc.paper:paper-mojangapi:1.19-R0.1-SNAPSHOT") {
          exclude("io.papermc.paper", "paper-api")
-@@ -82,7 +82,7 @@ tasks.jar {
+@@ -84,7 +84,7 @@ tasks.jar {
          attributes(
              "Main-Class" to "org.bukkit.craftbukkit.Main",
              "Implementation-Title" to "CraftBukkit",
