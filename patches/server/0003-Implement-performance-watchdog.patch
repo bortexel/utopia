@@ -1,14 +1,14 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: RuscalWorld <me@ruscalworld.ru>
-Date: Thu, 4 Aug 2022 07:58:26 +0300
+From: ruscalworld <me@ruscal.world>
+Date: Thu, 9 Mar 2023 10:52:28 +0300
 Subject: [PATCH] Implement performance watchdog
 
 
 diff --git a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
-index ad4fdbdcf09f30d10e61ccf47f8fb9ce6bd92e73..aa176464fc2b3d6b3eda163c73a957817275379d 100644
+index ad4fdbdcf09f30d10e61ccf47f8fb9ce6bd92e73..a3406b34e4dd8c8a3cb2bd39e57fac2052041367 100644
 --- a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
 +++ b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
-@@ -4,10 +4,8 @@ import com.google.common.collect.Lists;
+@@ -4,19 +4,14 @@ import com.google.common.collect.Lists;
  import com.mojang.authlib.GameProfile;
  import com.mojang.datafixers.DataFixer;
  import com.mojang.logging.LogUtils;
@@ -21,6 +21,26 @@ index ad4fdbdcf09f30d10e61ccf47f8fb9ce6bd92e73..aa176464fc2b3d6b3eda163c73a95781
  import java.net.InetAddress;
  import java.net.Proxy;
  import java.nio.charset.StandardCharsets;
+ import java.nio.file.Files;
+ import java.nio.file.Path;
+-import java.util.Collections;
+-import java.util.List;
+-import java.util.Locale;
+-import java.util.Optional;
++import java.util.*;
+ import java.util.function.BooleanSupplier;
+ import javax.annotation.Nullable;
+ import net.minecraft.DefaultUncaughtExceptionHandler;
+@@ -62,6 +57,9 @@ import co.aikar.timings.MinecraftTimings; // Paper
+ import org.bukkit.event.server.ServerCommandEvent;
+ import org.bukkit.craftbukkit.util.Waitable;
+ import org.bukkit.event.server.RemoteServerCommandEvent;
++import ru.bortexel.utopia.UtopiaConfig;
++import ru.bortexel.utopia.management.PerformanceWatchdog;
++import ru.bortexel.utopia.management.PropertyPool;
+ // CraftBukkit end
+ 
+ public class DedicatedServer extends MinecraftServer implements ServerInterface {
 @@ -224,6 +222,8 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
          gg.pufferfish.pufferfish.PufferfishConfig.load(); // Pufferfish
          gg.pufferfish.pufferfish.PufferfishCommand.init(); // Pufferfish
@@ -30,8 +50,23 @@ index ad4fdbdcf09f30d10e61ccf47f8fb9ce6bd92e73..aa176464fc2b3d6b3eda163c73a95781
          this.setPvpAllowed(dedicatedserverproperties.pvp);
          this.setFlightAllowed(dedicatedserverproperties.allowFlight);
          this.setMotd(dedicatedserverproperties.motd);
+@@ -341,6 +341,14 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
+                 DedicatedServer.LOGGER.info("JMX monitoring enabled");
+             }
+ 
++            // Utopia start
++            if (UtopiaConfig.configManagementEnabled) {
++                Timer timer = new Timer();
++                timer.schedule(new PerformanceWatchdog(), 0, UtopiaConfig.performanceWatchdogDelay);
++                PropertyPool.loadDefault(this);
++            }
++            // Utopia end
++
+             if (gg.pufferfish.pufferfish.PufferfishConfig.enableAsyncMobSpawning) mobSpawnExecutor.start(); // Pufferfish
+             return true;
+         }
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index b0ceac1a5a7becb2961ff72c057811bce3e798d3..939c4ec2558bc74df432e9d8552432ec598f46a5 100644
+index b0ceac1a5a7becb2961ff72c057811bce3e798d3..799a9e037729a579351266ab6aa5ea54bcf18447 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 @@ -28,21 +28,7 @@ import java.io.IOException;
@@ -67,33 +102,7 @@ index b0ceac1a5a7becb2961ff72c057811bce3e798d3..939c4ec2558bc74df432e9d8552432ec
  
  import javax.annotation.Nullable; // Paper
  import javax.annotation.Nonnull; // Paper
-@@ -386,6 +375,12 @@ public final class CraftServer implements Server {
-             MapPalette.setMapColorCache(new CraftMapColorCache(this.logger));
-         }
-         datapackManager = new io.papermc.paper.datapack.PaperDatapackManager(console.getPackRepository()); // Paper
-+
-+        // Utopia start
-+        PropertyPool.loadDefault(console.settings.getProperties(), this);
-+        Timer timer = new Timer();
-+        timer.schedule(new PerformanceWatchdog(), 0, UtopiaConfig.performanceWatchdogDelay);
-+        // Utopia end
-     }
- 
-     public boolean getCommandBlockOverride(String command) {
-@@ -403,6 +398,12 @@ public final class CraftServer implements Server {
-     private void overrideSpawnLimits() {
-         for (SpawnCategory spawnCategory : SpawnCategory.values()) {
-             if (CraftSpawnCategory.isValidForLimits(spawnCategory)) {
-+                // Utopia start
-+                if (UtopiaConfig.configManagementEnabled) {
-+                    this.spawnCategoryLimit.put(spawnCategory, PropertyPool.getSpawnCategoryLimit(spawnCategory));
-+                    continue;
-+                }
-+                // Utopia end
-                 this.spawnCategoryLimit.put(spawnCategory, this.configuration.getInt(CraftSpawnCategory.getConfigNameSpawnLimit(spawnCategory)));
-             }
-         }
-@@ -689,7 +690,7 @@ public final class CraftServer implements Server {
+@@ -689,7 +678,7 @@ public final class CraftServer implements Server {
  
      @Override
      public int getViewDistance() {
@@ -102,7 +111,7 @@ index b0ceac1a5a7becb2961ff72c057811bce3e798d3..939c4ec2558bc74df432e9d8552432ec
      }
  
      @Override
-@@ -961,6 +962,7 @@ public final class CraftServer implements Server {
+@@ -961,6 +950,7 @@ public final class CraftServer implements Server {
  
          org.spigotmc.SpigotConfig.init((File) console.options.valueOf("spigot-settings")); // Spigot
          this.console.paperConfigurations.reloadConfigs(this.console);
@@ -110,20 +119,8 @@ index b0ceac1a5a7becb2961ff72c057811bce3e798d3..939c4ec2558bc74df432e9d8552432ec
          for (ServerLevel world : this.console.getAllLevels()) {
              // world.serverLevelData.setDifficulty(config.difficulty); // Paper - per level difficulty
              world.setSpawnSettings(world.serverLevelData.getDifficulty() != Difficulty.PEACEFUL && config.spawnMonsters, config.spawnAnimals); // Paper - per level difficulty (from MinecraftServer#setDifficulty(ServerLevel, Difficulty, boolean))
-@@ -2195,6 +2197,11 @@ public final class CraftServer implements Server {
-     }
-     public int getSpawnLimitUnsafe(final SpawnCategory spawnCategory) {
-         // Paper end
-+        // Utopia start
-+        if (UtopiaConfig.configManagementEnabled) {
-+            return PropertyPool.getSpawnCategoryLimit(spawnCategory);
-+        }
-+        // Utopia end
-         return this.spawnCategoryLimit.getOrDefault(spawnCategory, -1);
-     }
- 
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
-index 54932d92b13b890b07f827c5f09bd137383d4ab5..8378271441db6e5adf162359738d37bf5a8d1149 100644
+index 54932d92b13b890b07f827c5f09bd137383d4ab5..db7ae18729352a50ccb1ac663935ed0b894f37f3 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
 @@ -134,6 +134,8 @@ import org.bukkit.util.Consumer;
@@ -135,28 +132,6 @@ index 54932d92b13b890b07f827c5f09bd137383d4ab5..8378271441db6e5adf162359738d37bf
  
  public class CraftWorld extends CraftRegionAccessor implements World {
      public static final int CUSTOM_DIMENSION_OFFSET = 10;
-@@ -1794,6 +1796,11 @@ public class CraftWorld extends CraftRegionAccessor implements World {
-         return this.getSpawnLimitUnsafe(spawnCategory);
-     }
-     public final int getSpawnLimitUnsafe(final SpawnCategory spawnCategory) {
-+        // Utopia start
-+        if (UtopiaConfig.configManagementEnabled) {
-+            return PropertyPool.getSpawnCategoryLimit(spawnCategory);
-+        }
-+        // Utopia end
-         int limit = this.spawnCategoryLimit.getOrDefault(spawnCategory, -1);
-         if (limit < 0) {
-             limit = this.server.getSpawnLimitUnsafe(spawnCategory);
-@@ -1807,7 +1814,8 @@ public class CraftWorld extends CraftRegionAccessor implements World {
-         Validate.notNull(spawnCategory, "SpawnCategory cannot be null");
-         Validate.isTrue(CraftSpawnCategory.isValidForLimits(spawnCategory), "SpawnCategory." + spawnCategory + " are not supported.");
- 
--        this.spawnCategoryLimit.put(spawnCategory, limit);
-+        if (!UtopiaConfig.configManagementEnabled) // Utopia
-+            this.spawnCategoryLimit.put(spawnCategory, limit);
-     }
- 
-     @Override
 diff --git a/src/main/java/org/bukkit/craftbukkit/Main.java b/src/main/java/org/bukkit/craftbukkit/Main.java
 index 190e17eb28d166aedee06e9578561ba402d1b6d2..6d3a4ce5d90b9f406d64e972843c3b605bcea086 100644
 --- a/src/main/java/org/bukkit/craftbukkit/Main.java
@@ -178,10 +153,10 @@ index 190e17eb28d166aedee06e9578561ba402d1b6d2..6d3a4ce5d90b9f406d64e972843c3b60
                          .withRequiredArg()
 diff --git a/src/main/java/ru/bortexel/utopia/UtopiaConfig.java b/src/main/java/ru/bortexel/utopia/UtopiaConfig.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..b6afe711cad47e34280b7b44e363ca770c1494b3
+index 0000000000000000000000000000000000000000..3267488f2621d386e1662a449dcda7aa7c3a1142
 --- /dev/null
 +++ b/src/main/java/ru/bortexel/utopia/UtopiaConfig.java
-@@ -0,0 +1,131 @@
+@@ -0,0 +1,132 @@
 +package ru.bortexel.utopia;
 +
 +import com.google.common.base.Throwables;
@@ -189,6 +164,7 @@ index 0000000000000000000000000000000000000000..b6afe711cad47e34280b7b44e363ca77
 +import org.bukkit.configuration.InvalidConfigurationException;
 +import org.bukkit.configuration.file.YamlConfiguration;
 +import ru.bortexel.utopia.management.ControlledProperty;
++import ru.bortexel.utopia.management.PropertyPool;
 +
 +import java.io.File;
 +import java.io.IOException;
@@ -292,14 +268,14 @@ index 0000000000000000000000000000000000000000..b6afe711cad47e34280b7b44e363ca77
 +    private static void configManagement() {
 +        configManagementEnabled = getBoolean(MANAGEMENT_ROOT + ".enable.value", false);
 +        if (configManagementEnabled) {
-+            loadControlledProperty(new ControlledProperty("view-distance", 6, 10, 10));
-+            loadControlledProperty(new ControlledProperty("monster-limit", 5, 70, 10));
-+            loadControlledProperty(new ControlledProperty("animal-limit", 2, 15, 7));
-+            loadControlledProperty(new ControlledProperty("water-animal-limit", 1, 5, 7));
-+            loadControlledProperty(new ControlledProperty("ambient-limit", 2, 15, 7));
-+            loadControlledProperty(new ControlledProperty("water-ambient-limit", 2, 20, 5));
-+            loadControlledProperty(new ControlledProperty("water-underground-creature-limit", 1, 5, 7));
-+            loadControlledProperty(new ControlledProperty("axolotls-limit", 1, 5, 5));
++            loadControlledProperty(new ControlledProperty("view-distance", 6, 10, 10, (v) -> PropertyPool.viewDistance = v));
++            loadControlledProperty(new ControlledProperty("monster-limit", 5, 70, 10, (v) -> PropertyPool.monsterSpawnLimit = v));
++            loadControlledProperty(new ControlledProperty("animal-limit", 2, 15, 7, (v) -> PropertyPool.animalSpawnLimit = v));
++            loadControlledProperty(new ControlledProperty("water-animal-limit", 1, 5, 7, (v) -> PropertyPool.waterAnimalSpawnLimit = v));
++            loadControlledProperty(new ControlledProperty("ambient-limit", 2, 15, 7, (v) -> PropertyPool.ambientSpawnLimit = v));
++            loadControlledProperty(new ControlledProperty("water-ambient-limit", 2, 20, 5, (v) -> PropertyPool.waterAmbientSpawnLimit = v));
++            loadControlledProperty(new ControlledProperty("water-underground-creature-limit", 1, 5, 7, (v) -> PropertyPool.waterUndergroundCreatureSpawnLimit = v));
++            loadControlledProperty(new ControlledProperty("axolotls-limit", 1, 5, 5, (v) -> PropertyPool.axolotlsSpawnLimit = v));
 +        }
 +
 +        configManagementEnableFrom = Time.valueOf(getString(MANAGEMENT_ROOT + ".enable.from", "00:00:00"));
@@ -315,13 +291,14 @@ index 0000000000000000000000000000000000000000..b6afe711cad47e34280b7b44e363ca77
 +}
 diff --git a/src/main/java/ru/bortexel/utopia/management/ControlledProperty.java b/src/main/java/ru/bortexel/utopia/management/ControlledProperty.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..3d00d5837a786fc80955d1c814321b74a8287571
+index 0000000000000000000000000000000000000000..57ad32e43183fc34bf70e5f5db021e124b4452af
 --- /dev/null
 +++ b/src/main/java/ru/bortexel/utopia/management/ControlledProperty.java
-@@ -0,0 +1,36 @@
+@@ -0,0 +1,49 @@
 +package ru.bortexel.utopia.management;
 +
 +import org.bukkit.configuration.ConfigurationSection;
++import org.bukkit.util.Consumer;
 +import ru.bortexel.utopia.UtopiaConfig;
 +
 +public class ControlledProperty {
@@ -329,20 +306,23 @@ index 0000000000000000000000000000000000000000..3d00d5837a786fc80955d1c814321b74
 +    public double max;
 +    public int weight;
 +    private final String name;
++    private final Consumer<Integer> updater;
 +
-+    public ControlledProperty(ConfigurationSection configuration) {
++    public ControlledProperty(ConfigurationSection configuration, Consumer<Integer> updater) {
 +        this.min = configuration.getDouble("min");
 +        this.max = configuration.getDouble("max");
 +        this.weight = configuration.getInt("weight");
 +        this.name = configuration.getCurrentPath();
++        this.updater = updater;
 +    }
 +
-+    public ControlledProperty(String name, double defMin, double defMax, int defWeight) {
++    public ControlledProperty(String name, double defMin, double defMax, int defWeight, Consumer<Integer> updater) {
 +        String path = UtopiaConfig.MANAGEMENT_PROPERTIES + "." + name + ".";
 +        this.min = UtopiaConfig.getDouble(path + "min", defMin);
 +        this.max = UtopiaConfig.getDouble(path + "max", defMax);
 +        this.weight = UtopiaConfig.getInt(path + "weight", defWeight);
 +        this.name = name;
++        this.updater = updater;
 +    }
 +
 +    public double getValue(double lagRate) {
@@ -351,24 +331,35 @@ index 0000000000000000000000000000000000000000..3d00d5837a786fc80955d1c814321b74
 +        return Math.max(this.min, Math.min(this.max, value));
 +    }
 +
++    public void update(double lagRate) {
++        double value = lagRate < 0 ? min : this.getValue(lagRate);
++        this.updater.accept((int) Math.round(value));
++    }
++
++    public void update() {
++        this.update(-1);
++    }
++
 +    public String getName() {
 +        return name;
 +    }
 +}
 diff --git a/src/main/java/ru/bortexel/utopia/management/PerformanceWatchdog.java b/src/main/java/ru/bortexel/utopia/management/PerformanceWatchdog.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..5d007b512bdfa58b46bd8c9c692a94db36fdceee
+index 0000000000000000000000000000000000000000..7ee4f4d1fc53c3328038834172a2bf0e709abce8
 --- /dev/null
 +++ b/src/main/java/ru/bortexel/utopia/management/PerformanceWatchdog.java
-@@ -0,0 +1,50 @@
+@@ -0,0 +1,35 @@
 +package ru.bortexel.utopia.management;
 +
 +import net.minecraft.server.MinecraftServer;
 +import org.bukkit.Bukkit;
++import org.bukkit.craftbukkit.CraftServer;
 +import ru.bortexel.utopia.UtopiaConfig;
 +
 +import java.sql.Time;
 +import java.time.LocalTime;
++import java.util.Map;
 +import java.util.TimerTask;
 +
 +public class PerformanceWatchdog extends TimerTask {
@@ -384,28 +375,11 @@ index 0000000000000000000000000000000000000000..5d007b512bdfa58b46bd8c9c692a94db
 +        double rate = currentTPS / maxTPS * 100;
 +
 +        try {
-+            ControlledProperty viewDistance = UtopiaConfig.controlledProperties.get("view-distance");
-+            ControlledProperty monsterSpawnLimit = UtopiaConfig.controlledProperties.get("monster-limit");
-+            ControlledProperty animalSpawnLimit = UtopiaConfig.controlledProperties.get("animal-limit");
-+            ControlledProperty waterAnimalSpawnLimit = UtopiaConfig.controlledProperties.get("water-animal-limit");
-+            ControlledProperty ambientSpawnLimit = UtopiaConfig.controlledProperties.get("ambient-limit");
-+            ControlledProperty waterAmbientSpawnLimit = UtopiaConfig.controlledProperties.get("water-ambient-limit");
-+            ControlledProperty waterUndergroundCreatureSpawnLimit = UtopiaConfig.controlledProperties.get("water-ambient-underground-creature-limit");
++            for (Map.Entry<String, ControlledProperty> entry : UtopiaConfig.controlledProperties.entrySet()) {
++                entry.getValue().update(rate);
++            }
 +
-+            if (viewDistance != null)
-+                PropertyPool.viewDistance = (int) Math.round(viewDistance.getValue(rate));
-+            if (monsterSpawnLimit != null)
-+                PropertyPool.monsterSpawnLimit = (int) Math.round(monsterSpawnLimit.getValue(rate));
-+            if (animalSpawnLimit != null)
-+                PropertyPool.animalSpawnLimit = (int) Math.round(animalSpawnLimit.getValue(rate));
-+            if (waterAnimalSpawnLimit != null)
-+                PropertyPool.waterAnimalSpawnLimit = (int) Math.round(waterAnimalSpawnLimit.getValue(rate));
-+            if (ambientSpawnLimit != null)
-+                PropertyPool.ambientSpawnLimit = (int) Math.round(ambientSpawnLimit.getValue(rate));
-+            if (waterAmbientSpawnLimit != null)
-+                PropertyPool.waterAmbientSpawnLimit = (int) Math.round(waterAmbientSpawnLimit.getValue(rate));
-+            if (waterUndergroundCreatureSpawnLimit != null)
-+                PropertyPool.waterUndergroundCreatureSpawnLimit = (int) Math.round(waterUndergroundCreatureSpawnLimit.getValue(rate));
++            PropertyPool.updateSpawnLimits((CraftServer) Bukkit.getServer());
 +        } catch (Exception e) {
 +            Bukkit.getLogger().warning("Performance Watchdog failure: " + e.getLocalizedMessage());
 +        }
@@ -413,15 +387,20 @@ index 0000000000000000000000000000000000000000..5d007b512bdfa58b46bd8c9c692a94db
 +}
 diff --git a/src/main/java/ru/bortexel/utopia/management/PropertyPool.java b/src/main/java/ru/bortexel/utopia/management/PropertyPool.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..d2ae3d8f78fdf3892975e8d95d237a56ea0448ec
+index 0000000000000000000000000000000000000000..d2f4ac79c9405e4e8b5c0d39083d643cd41c0fbf
 --- /dev/null
 +++ b/src/main/java/ru/bortexel/utopia/management/PropertyPool.java
-@@ -0,0 +1,33 @@
+@@ -0,0 +1,44 @@
 +package ru.bortexel.utopia.management;
 +
++import net.minecraft.server.dedicated.DedicatedServer;
 +import net.minecraft.server.dedicated.DedicatedServerProperties;
 +import org.bukkit.craftbukkit.CraftServer;
++import org.bukkit.craftbukkit.CraftWorld;
 +import org.bukkit.entity.SpawnCategory;
++import ru.bortexel.utopia.UtopiaConfig;
++
++import java.util.Map;
 +
 +public class PropertyPool {
 +    public static Integer viewDistance = 10;
@@ -433,20 +412,26 @@ index 0000000000000000000000000000000000000000..d2ae3d8f78fdf3892975e8d95d237a56
 +    public static Integer waterUndergroundCreatureSpawnLimit = 5;
 +    public static Integer axolotlsSpawnLimit = 5;
 +
-+    public static void loadDefault(DedicatedServerProperties properties, CraftServer server) {
++    public static void loadDefault(DedicatedServer server) {
++        DedicatedServerProperties properties = server.getProperties();
 +        viewDistance = properties.viewDistance;
++
++        for (Map.Entry<String, ControlledProperty> entry : UtopiaConfig.controlledProperties.entrySet()) {
++            entry.getValue().update();
++        }
 +    }
 +
-+    public static int getSpawnCategoryLimit(SpawnCategory category) {
-+        return switch (category) {
-+            case MONSTER -> monsterSpawnLimit;
-+            case ANIMAL -> animalSpawnLimit;
-+            case WATER_ANIMAL -> waterAnimalSpawnLimit;
-+            case WATER_AMBIENT -> waterAmbientSpawnLimit;
-+            case WATER_UNDERGROUND_CREATURE -> waterUndergroundCreatureSpawnLimit;
-+            case AMBIENT -> ambientSpawnLimit;
-+            case AXOLOTL -> axolotlsSpawnLimit;
-+            default -> throw new UnsupportedOperationException("Unknown spawn category " + category);
-+        };
++    public static void updateSpawnLimits(CraftServer server) {
++        server.getWorlds().forEach(world -> updateSpawnLimits((CraftWorld) world));
++    }
++
++    public static void updateSpawnLimits(CraftWorld world) {
++        world.setSpawnLimit(SpawnCategory.MONSTER, monsterSpawnLimit);
++        world.setSpawnLimit(SpawnCategory.ANIMAL, animalSpawnLimit);
++        world.setSpawnLimit(SpawnCategory.WATER_ANIMAL, waterAnimalSpawnLimit);
++        world.setSpawnLimit(SpawnCategory.WATER_AMBIENT, waterAmbientSpawnLimit);
++        world.setSpawnLimit(SpawnCategory.WATER_UNDERGROUND_CREATURE, waterUndergroundCreatureSpawnLimit);
++        world.setSpawnLimit(SpawnCategory.AMBIENT, ambientSpawnLimit);
++        world.setSpawnLimit(SpawnCategory.AXOLOTL, axolotlsSpawnLimit);
 +    }
 +}
