@@ -31,7 +31,7 @@ index 519883c5549744e047a8a96afee142746fcb49cd..fa7132be39fde2bdaed1ee5936ec387e
          this.setFlightAllowed(dedicatedserverproperties.allowFlight);
          this.setMotd(dedicatedserverproperties.motd);
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index a6d64b255458a40cd62a2273161205b9f93ee901..08684e181c31800d3cc7104db5aa36f9005f5809 100644
+index eb2a1c5c98c73d232439aa1bf766ead17a65d5d3..61a7f16d0ff2387069163e5fa0937d742670e060 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 @@ -25,21 +25,7 @@ import java.io.IOException;
@@ -57,7 +57,7 @@ index a6d64b255458a40cd62a2273161205b9f93ee901..08684e181c31800d3cc7104db5aa36f9
  import java.util.function.Consumer;
  import java.util.logging.Level;
  import java.util.logging.Logger;
-@@ -241,6 +227,9 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
+@@ -243,6 +229,9 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
  import org.yaml.snakeyaml.error.MarkedYAMLException;
  
  import net.md_5.bungee.api.chat.BaseComponent; // Spigot
@@ -67,7 +67,7 @@ index a6d64b255458a40cd62a2273161205b9f93ee901..08684e181c31800d3cc7104db5aa36f9
  
  import javax.annotation.Nullable; // Paper
  import javax.annotation.Nonnull; // Paper
-@@ -370,6 +359,12 @@ public final class CraftServer implements Server {
+@@ -372,6 +361,12 @@ public final class CraftServer implements Server {
              MapPalette.setMapColorCache(new CraftMapColorCache(this.logger));
          }
          datapackManager = new io.papermc.paper.datapack.PaperDatapackManager(console.getPackRepository()); // Paper
@@ -80,7 +80,7 @@ index a6d64b255458a40cd62a2273161205b9f93ee901..08684e181c31800d3cc7104db5aa36f9
      }
  
      public boolean getCommandBlockOverride(String command) {
-@@ -387,6 +382,12 @@ public final class CraftServer implements Server {
+@@ -389,6 +384,12 @@ public final class CraftServer implements Server {
      private void overrideSpawnLimits() {
          for (SpawnCategory spawnCategory : SpawnCategory.values()) {
              if (CraftSpawnCategory.isValidForLimits(spawnCategory)) {
@@ -93,7 +93,7 @@ index a6d64b255458a40cd62a2273161205b9f93ee901..08684e181c31800d3cc7104db5aa36f9
                  this.spawnCategoryLimit.put(spawnCategory, this.configuration.getInt(CraftSpawnCategory.getConfigNameSpawnLimit(spawnCategory)));
              }
          }
-@@ -692,7 +693,7 @@ public final class CraftServer implements Server {
+@@ -694,7 +695,7 @@ public final class CraftServer implements Server {
  
      @Override
      public int getViewDistance() {
@@ -102,7 +102,7 @@ index a6d64b255458a40cd62a2273161205b9f93ee901..08684e181c31800d3cc7104db5aa36f9
      }
  
      @Override
-@@ -959,6 +960,7 @@ public final class CraftServer implements Server {
+@@ -961,6 +962,7 @@ public final class CraftServer implements Server {
  
          org.spigotmc.SpigotConfig.init((File) console.options.valueOf("spigot-settings")); // Spigot
          this.console.paperConfigurations.reloadConfigs(this.console);
@@ -110,7 +110,7 @@ index a6d64b255458a40cd62a2273161205b9f93ee901..08684e181c31800d3cc7104db5aa36f9
          for (ServerLevel world : this.console.getAllLevels()) {
              // world.serverLevelData.setDifficulty(config.difficulty); // Paper - per level difficulty
              world.setSpawnSettings(world.serverLevelData.getDifficulty() != Difficulty.PEACEFUL && config.spawnMonsters, config.spawnAnimals); // Paper - per level difficulty (from MinecraftServer#setDifficulty(ServerLevel, Difficulty, boolean))
-@@ -2178,6 +2180,11 @@ public final class CraftServer implements Server {
+@@ -2180,6 +2182,11 @@ public final class CraftServer implements Server {
      }
      public int getSpawnLimitUnsafe(final SpawnCategory spawnCategory) {
          // Paper end
@@ -123,7 +123,7 @@ index a6d64b255458a40cd62a2273161205b9f93ee901..08684e181c31800d3cc7104db5aa36f9
      }
  
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
-index a5d8dfc77475845be7c6d37eed04fb19eeef1c0c..b481af26183be4913dfc1841b6039a339b30a13e 100644
+index f0b14914438840bd819fa7da8b76f4fcc13704d0..b36c05fd9f2666235d159ea2cb65ece150a32e96 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
 @@ -135,6 +135,8 @@ import org.bukkit.util.Consumer;
@@ -135,7 +135,7 @@ index a5d8dfc77475845be7c6d37eed04fb19eeef1c0c..b481af26183be4913dfc1841b6039a33
  
  public class CraftWorld extends CraftRegionAccessor implements World {
      public static final int CUSTOM_DIMENSION_OFFSET = 10;
-@@ -1797,6 +1799,11 @@ public class CraftWorld extends CraftRegionAccessor implements World {
+@@ -1817,6 +1819,11 @@ public class CraftWorld extends CraftRegionAccessor implements World {
          return this.getSpawnLimitUnsafe(spawnCategory);
      }
      public final int getSpawnLimitUnsafe(final SpawnCategory spawnCategory) {
@@ -147,7 +147,7 @@ index a5d8dfc77475845be7c6d37eed04fb19eeef1c0c..b481af26183be4913dfc1841b6039a33
          int limit = this.spawnCategoryLimit.getOrDefault(spawnCategory, -1);
          if (limit < 0) {
              limit = this.server.getSpawnLimitUnsafe(spawnCategory);
-@@ -1810,7 +1817,8 @@ public class CraftWorld extends CraftRegionAccessor implements World {
+@@ -1830,7 +1837,8 @@ public class CraftWorld extends CraftRegionAccessor implements World {
          Validate.notNull(spawnCategory, "SpawnCategory cannot be null");
          Validate.isTrue(CraftSpawnCategory.isValidForLimits(spawnCategory), "SpawnCategory." + spawnCategory + " are not supported.");
  

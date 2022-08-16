@@ -5,10 +5,10 @@ Subject: [PATCH] Utopia branding
 
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index d66c60918313b0ede41ed96aa82e11fb2230f95b..8305eb607c7c49d3c4e3c3834f666841fc1c3a28 100644
+index 06d31a03ec7d049649e94d013429d2197b697545..68221f61be6f3378d116788080f560d1f617a2dd 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
-@@ -1657,7 +1657,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1658,7 +1658,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
  
      @DontObfuscate
      public String getServerModName() {
@@ -18,10 +18,10 @@ index d66c60918313b0ede41ed96aa82e11fb2230f95b..8305eb607c7c49d3c4e3c3834f666841
  
      public SystemReport fillSystemReport(SystemReport details) {
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index 9a8a7eff47d40d6de558f0946c450531b3984f44..a6d64b255458a40cd62a2273161205b9f93ee901 100644
+index bfd4520ef6f085685a25cf7f49907e16202e6386..eb2a1c5c98c73d232439aa1bf766ead17a65d5d3 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-@@ -246,7 +246,7 @@ import javax.annotation.Nullable; // Paper
+@@ -248,7 +248,7 @@ import javax.annotation.Nullable; // Paper
  import javax.annotation.Nonnull; // Paper
  
  public final class CraftServer implements Server {
