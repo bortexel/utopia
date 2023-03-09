@@ -5,7 +5,7 @@ Subject: [PATCH] Implement performance watchdog
 
 
 diff --git a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
-index 673fb3955291407be37dc78be4eec9bf2018128b..654629b9769198a9926ed5c2efff46837ff1675d 100644
+index ad4fdbdcf09f30d10e61ccf47f8fb9ce6bd92e73..aa176464fc2b3d6b3eda163c73a957817275379d 100644
 --- a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
 +++ b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
 @@ -4,10 +4,8 @@ import com.google.common.collect.Lists;
@@ -31,7 +31,7 @@ index 673fb3955291407be37dc78be4eec9bf2018128b..654629b9769198a9926ed5c2efff4683
          this.setFlightAllowed(dedicatedserverproperties.allowFlight);
          this.setMotd(dedicatedserverproperties.motd);
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index 1bfdc216d5ae88bedd68257f050c6ee2927fec37..9a75bad868752cad67288d8931156fe60452418b 100644
+index b0ceac1a5a7becb2961ff72c057811bce3e798d3..939c4ec2558bc74df432e9d8552432ec598f46a5 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 @@ -28,21 +28,7 @@ import java.io.IOException;
@@ -67,7 +67,7 @@ index 1bfdc216d5ae88bedd68257f050c6ee2927fec37..9a75bad868752cad67288d8931156fe6
  
  import javax.annotation.Nullable; // Paper
  import javax.annotation.Nonnull; // Paper
-@@ -385,6 +374,12 @@ public final class CraftServer implements Server {
+@@ -386,6 +375,12 @@ public final class CraftServer implements Server {
              MapPalette.setMapColorCache(new CraftMapColorCache(this.logger));
          }
          datapackManager = new io.papermc.paper.datapack.PaperDatapackManager(console.getPackRepository()); // Paper
@@ -80,7 +80,7 @@ index 1bfdc216d5ae88bedd68257f050c6ee2927fec37..9a75bad868752cad67288d8931156fe6
      }
  
      public boolean getCommandBlockOverride(String command) {
-@@ -402,6 +397,12 @@ public final class CraftServer implements Server {
+@@ -403,6 +398,12 @@ public final class CraftServer implements Server {
      private void overrideSpawnLimits() {
          for (SpawnCategory spawnCategory : SpawnCategory.values()) {
              if (CraftSpawnCategory.isValidForLimits(spawnCategory)) {
@@ -93,7 +93,7 @@ index 1bfdc216d5ae88bedd68257f050c6ee2927fec37..9a75bad868752cad67288d8931156fe6
                  this.spawnCategoryLimit.put(spawnCategory, this.configuration.getInt(CraftSpawnCategory.getConfigNameSpawnLimit(spawnCategory)));
              }
          }
-@@ -707,7 +708,7 @@ public final class CraftServer implements Server {
+@@ -689,7 +690,7 @@ public final class CraftServer implements Server {
  
      @Override
      public int getViewDistance() {
@@ -102,7 +102,7 @@ index 1bfdc216d5ae88bedd68257f050c6ee2927fec37..9a75bad868752cad67288d8931156fe6
      }
  
      @Override
-@@ -979,6 +980,7 @@ public final class CraftServer implements Server {
+@@ -961,6 +962,7 @@ public final class CraftServer implements Server {
  
          org.spigotmc.SpigotConfig.init((File) console.options.valueOf("spigot-settings")); // Spigot
          this.console.paperConfigurations.reloadConfigs(this.console);
@@ -110,7 +110,7 @@ index 1bfdc216d5ae88bedd68257f050c6ee2927fec37..9a75bad868752cad67288d8931156fe6
          for (ServerLevel world : this.console.getAllLevels()) {
              // world.serverLevelData.setDifficulty(config.difficulty); // Paper - per level difficulty
              world.setSpawnSettings(world.serverLevelData.getDifficulty() != Difficulty.PEACEFUL && config.spawnMonsters, config.spawnAnimals); // Paper - per level difficulty (from MinecraftServer#setDifficulty(ServerLevel, Difficulty, boolean))
-@@ -2212,6 +2214,11 @@ public final class CraftServer implements Server {
+@@ -2195,6 +2197,11 @@ public final class CraftServer implements Server {
      }
      public int getSpawnLimitUnsafe(final SpawnCategory spawnCategory) {
          // Paper end
@@ -123,7 +123,7 @@ index 1bfdc216d5ae88bedd68257f050c6ee2927fec37..9a75bad868752cad67288d8931156fe6
      }
  
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
-index f8d321e925bf2708e51590542325c1bdc67d5964..ada01a6477b8ebc4c4849c95c2946ff16efe592d 100644
+index 54932d92b13b890b07f827c5f09bd137383d4ab5..8378271441db6e5adf162359738d37bf5a8d1149 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
 @@ -134,6 +134,8 @@ import org.bukkit.util.Consumer;

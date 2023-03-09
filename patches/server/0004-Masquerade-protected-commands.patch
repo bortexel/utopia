@@ -5,10 +5,10 @@ Subject: [PATCH] Masquerade protected commands
 
 
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index 9a75bad868752cad67288d8931156fe60452418b..e91b8aeaf75d3ef007df28d7bc27aed300bf9dcc 100644
+index 939c4ec2558bc74df432e9d8552432ec598f46a5..0e1f20b314faf1079aa4176f601aefde5f2ef299 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-@@ -2883,6 +2883,10 @@ public final class CraftServer implements Server {
+@@ -2866,6 +2866,10 @@ public final class CraftServer implements Server {
  
      @Override
      public String getPermissionMessage() {
